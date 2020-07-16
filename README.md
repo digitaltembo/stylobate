@@ -2,17 +2,17 @@
 
 A starting point for quick-to-implement, easy-to-deploy and lightweight web applications.
 
-* [Design Philosophy](#Design%20Philosophy)
-* [Design Antiphilosophy](#Design%20Antiphilosophy)
-* [Infrastucture Stack](#Infrastucture%20Stack)
+* [Design Philosophy](#Design-Philosophy)
+* [Design Antiphilosophy](#Design-Antiphilosophy)
+* [Infrastucture Stack](#Infrastucture-Stack)
 * [Features](#Features)
 * [Requiremesnts](#Requirements)
-* [Getting Started](#Getting%20Started)
-    1. [Set up database](#Set%20up%20database)
-    2. [Set up endpoints](#Set%20up%20endpoints)
-    3. [Set up frontend](#Set%20up%20frontend)
-    4. [Run in Production](#Run%20in%20Production)
-* [File Structure](#File%20Structure)
+* [Getting Started](#Getting-Started)
+    1. [Set up database](#Set-up-database)
+    2. [Set up endpoints](#Set-up-endpoints)
+    3. [Set up frontend](#Set-up-frontend)
+    4. [Run in Production](#Run-in-Production)
+* [File Structure](#File-Structure)
 
 ## Design Philosophy
 
