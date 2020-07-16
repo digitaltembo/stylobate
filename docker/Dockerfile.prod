@@ -1,0 +1,31 @@
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
+
+# Install NPM
+RUN apt-get install -y curl \
+  && curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+  && apt-get install -y nodejs \
+  && curl -L https://www.npmjs.com/install.sh | sh
+
+# Install Yarn
+RUN npm install -g yarn
+
+RUN mkdir /frontend 
+COPY ./frontend/package.json /frontend
+COPY ./frontend/yarn.lock /frontend
+
+RUN yarn --cwd /frontend install
+
+COPY ./backend /app
+
+# Install Python Dependencies
+RUN pip install -r /app/requirements.txt
+
+
+COPY ./frontend /frontend
+
+EXPOSE 3000
+
+COPY docker/docker-prod-start.sh /
+
+CMD ["./docker-prod-start.sh"]
+

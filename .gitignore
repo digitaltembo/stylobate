@@ -1,0 +1,20 @@
+backend/venv
+**/__pycache__/
+
+frontend/node_modules
+frontend/node_modules
+frontend/.pnp
+frontend.pnp.js
+
+# testing
+frontend/coverage
+
+# misc
+frontend/.DS_Store
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
