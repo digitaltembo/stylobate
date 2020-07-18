@@ -1,23 +1,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { createMuiTheme, responsiveFontSizes, ThemeProvider } from '@material-ui/core/styles';
-import { ThemeProvider } from '@material-ui/styles';
 
 import './index.css';
 import Routes from './Routes';
+import Theme from './Theme';
+
 import { AuthContextWrapper } from './utils/AuthContext';
 import * as serviceWorker from './serviceWorker';
 
-const theme = createMuiTheme();
-
 ReactDOM.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
+    <Theme>
       <AuthContextWrapper>
         <Routes />
       </AuthContextWrapper>
-    </ThemeProvider>
+    </Theme>
   </React.StrictMode>,
   document.getElementById('root')
 );

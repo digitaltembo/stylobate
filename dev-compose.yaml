@@ -1,0 +1,22 @@
+# Development Docker Compose
+version: '3'
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.dev 
+      context: ./backend 
+    volumes:
+      - /app/backend/venv
+      - ./backend:/app
+    environment:
+      - PORT=8000
+    ports:
+      - 8000:8000
+  frontend:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./frontend
+    volumes:
+      - ./frontend:/frontend
+    ports:
+      - 3000:3000

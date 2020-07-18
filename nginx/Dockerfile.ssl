@@ -1,0 +1,7 @@
+FROM nginx
+
+# Note: as this requires frontend build artifacts, it is necessary 
+# that the context of this dockerfile be the top level of the project 
+COPY ./frontend/build /www/data
+
+COPY ./nginx/ssl.conf /etc/nginx/conf.d/app.conf

@@ -1,0 +1,21 @@
+version: '3'
+services:
+  nginx_prod:
+    restart: always
+    build:
+      dockerfile: nginx/Dockerfile.prod
+      context: . 
+    ports:
+      - 80:80
+    depends_on:
+      - backend_prod 
+  backend_prod:
+    build:
+      dockerfile: Dockerfile.prod 
+      context: ./backend 
+    environment:
+      - PORT=8000
+      - SERVER=NGINX
+      - IS_PROD=TRUE
+    expose:
+      - 8000

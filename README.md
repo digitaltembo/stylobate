@@ -48,21 +48,26 @@ When putting this together, I specifically did **NOT** prioritize:
 ## Infrastucture Stack
 I built this project as a quick jumping off point for whatever webapp I want to use. It integrates the following technologies, in rough order from back to front:
 
-* Docker
-* Sqlite
-* Alembic
-* SqlAlchemy
-* ASGI
-* Uvicorn
-* Gunicorn
-* Python 3.8
-* FastAPI
-* OpenAPI/Swagger
-* Pydantic
-* ES6/JSX
-* create-react-app
-* react-dom-router
-* MaterialUI
+* [Docker](https://docs.docker.com/)/[Docker Compose](https://docs.docker.com/compose/)
+* [NginX](https://nginx.org/en/docs/beginners_guide.html)
+* [LetsEncrypt](https://letsencrypt.org/how-it-works/)
+* [Sqlite](https://www.sqlite.org/about.html)
+* [Alembic](https://alembic.sqlalchemy.org/en/latest/tutorial.html)
+* [SqlAlchemy](https://docs.sqlalchemy.org/en/13/orm/tutorial.html#declare-a-mapping)
+* [Gunicorn](https://docs.gunicorn.org/en/stable/)
+* [ASGI](https://asgi.readthedocs.io/en/latest/)
+* [Uvicorn](https://www.uvicorn.org/deployment/)
+* [Python 3.8](https://docs.python.org/3/whatsnew/3.8.html)
+* [FastAPI](https://fastapi.tiangolo.com/)
+* [OpenAPI/Swagger](https://swagger.io/resources/open-api/)
+* [Pydantic](https://pydantic-docs.helpmanual.io/)
+* [ES6/JSX](https://reactjs.org/docs/introducing-jsx.html)
+* [create-react-app](https://reactjs.org/docs/create-a-new-react-app.html)
+* [react-router-dom](https://reactrouter.com/web/guides/quick-start)
+* [MaterialUI](https://material-ui.com/getting-started/usage/)
+* [Font Awesome](https://fontawesome.com/icons?d=gallery&s=solid&m=free)
+
+That looks like a lot of technologies, but don't be afraid! All you need to get this working is to know a little bit of Python and a little bit of React.
 
 ## Features
 
@@ -71,9 +76,11 @@ Lots of fun features are built in!
     * Rather than learn all the syntax of the various programs used, you can just use the [stylobate-mgmt](https://github.com/digitaltembo/stylobate-mgmt) script to manage things
     * Inspired by Django and Flask's `manage.py`
 * Production Ready
-    * Just build the Dockerfile.prod image and deploy it: `stylo build --docker-prod && stylo run --docker-prod`
+    * Just build the Dockerfile.prod image and deploy it: `stylo build --docker-ssl && stylo run --docker-ssl`
+* Built-in HTTPS
+    * Requires using the `ssl-compose.yaml` file for docker-compose
 * Containers
-    * Both development and production Dockerfiles are provided
+    * Development, Production, and Production-With-SSL docker-compose.yaml files provided
 * Non-Containers
     * Containers can be annoying and confusing and you don't have to use them
 * Auto-generated migrations
@@ -100,7 +107,7 @@ Lots of fun features are built in!
 * Node 10
 * Yarn
     * `npm install -g yarn`
-* **Optional:** Docker
+* **Optional:** Docker/docker-compose
     * If you want to run the containerized server
 * **Optional:** `stylobate-mgmt`
     * `pip install stylobate-mgmt`
@@ -156,9 +163,7 @@ If you installed the stylobate-mgmt tool and the GitHub CLI, simply run `stylo i
 ### Set up frontend
 
 1. Define your routes within `frontend/src/routes.jsx`
-    * Each page should either require authentication `<RequireAuth>`, change based on authentication `<OptionalAuth>`, or just ignore it alltogether
 2. Add new pages within `frontend/src/pages`
-    * Implement state changes responding to API requests with `<MyGet>` and `<MyPost>`, which handle the request state and authentication for you
 3. Add new common components within `frontend/src/components`
 4. Add package dependencies with `yarn add <x>`
 5. Ensure Ergonomics
@@ -172,19 +177,65 @@ If you installed the stylobate-mgmt tool and the GitHub CLI, simply run `stylo i
     * `yarn start` from `frontend` directory if not
     * Probably only want to do this while also running the backend server, so it has someone to talk to
 
-### Run in Production
-1. Build Docker image
-    * `stylo build --docker-prod [--username <dockerhub username>]` or
-    * `yarn --cwd frontend build && docker build -f Dockerfile.dev -t <image name> .` from the main directory
-2. Run the Docker image
-    * `stylo run --docker-prod [--username <dockerhub username>]` or
-    * `docker run -itd --name <container name> -p 80:80 -e PORT="80" -e IS_PROD="TRUE" -e SECRET_KEY=$(uuidgen) <image name> "sh /docker-prod-start.sh"` 
-3. TaDa!
-    * Everything should be accessible at `http://localhost`
-    * API calls should go through `http://localhost/api/<service>/<endpoint>`
-    * Documentation should still be at `http://localhost/docs`
-    * The `yarn build` static objects should be served from the base directory, with `frontend/build/index.html` as the response to `http://localhost`
-        * In the development version, api calls are proxied through to `localhost:8000`; that shouldn't happen here
+### Run in Docker
+
+There are a few alternatives set up for running in docker-compose.
+
+#### Docker in Development
+
+If you wish to run docker in development, use the `dev-compose.yaml` docker-compose structure. This will mount your frontend and backend directories, allowing for hot-reloading. This runs the Uvicorn server for the backend and the React-Scripts server for the frontend.
+
+1. Fix proxies
+    * The React Server is by default set up to proxy API requests to localhost:8000, but after it is put in an individual container that is no longer accessible
+    * Replace `"proxy": "http://localhost:8000",` with `"proxy": "http://backend:8000",` in `frontend/package.json`
+    * Not required if using `stylobate-mgmt`, it handles that for you
+2. Build Images
+    * `stylo build --docker-dev` or
+    * `docker-compose -f dev-compose.yaml build`
+3. Run Containers
+    * `stylo run --docker-dev` or
+    * `docker-compose -f dev-compose.yaml up -d`
+    * The `-d` argument makes the containers run in the background
+    * The frontend will be accessible at localhost:3000, the backend at localhost:8000
+4. Follow logs
+    * `stylo logs --docker-dev` or
+    * `docker-compose -f dev-compose.yaml logs -f`
+5. Stop Containers
+    * `stylo stop --docker-dev` or
+    * `docker-compose -f dev-compose.yaml down`
+
+#### Docker in Production
+
+This runs NginX as the base web server, directly serving compiled static files for the frontend and proxying requests to Gunicorn-managed Uvicorn processes on the backend. There are no volumes mounted, so the server only needs the nginx and backend docker images. 
+
+1. Build JS
+    * NginX needs the latest compiled files from the frontend project, so run `yarn build` from the `frontend` directory before building the images
+    * Not required if using `stylobate-mgmt`, it handles that for you
+2. Build Images, Run Containers, Follow Logs, and Stop Containers
+    * Same steps as for Docker in Development!
+    * Replace `--docker-dev` argument with `--docker-prod` if using `stylobate-mgmt`
+    * Replace `-f dev-compose.yaml` with `-f prod-compose.yaml` otherwise
+    * Everything will be served through localhost:80, with API calls to localhost:80/api/[endpoint] forwarded to the FastAPI server 
+
+#### Docker in Production with SSL
+
+Same basic deal as [Docker in Production](#Docker-in-Production), but with SSL Certificates served by NginX and managed by LetsEncrypt's Certbot
+
+1. Set Up Certificates
+    * First off, you need to have a domain handy for which LetsEncrypt will generate certificates
+    * Bootstrapping LetsEncrypt containers from within a server is a bit complicated, but there is a script for that!
+    * Not required if using `stylobate-mgmt`, it handles that for you
+    * Otherwise, replace the references to `example.org` with your domain in `nginx/ssl.conf`
+    * Then run `certbot/init-letsencrypt.sh 'example.org www.example.org' email@example.org` from the top directory
+    * It is only necessary to do this the first time you build, otherwise things should be managed for you
+2. Build JS
+    * NginX needs the latest compiled files from the frontend project, so run `yarn build` from the `frontend` directory before building the images
+    * Not required if using `stylobate-mgmt`, it handles that for you
+3. Build Images, Run Containers, Follow Logs, and Stop Containers
+    * Same steps as for Docker Development/Docker Production
+    * Replace `--docker-dev` argument with `--docker-ssl` if using `stylobate-mgmt`
+    * Replace `-f dev-compose.yaml` with `-f prod-compose.yaml` otherwise
+    * Everything will be served through localhost:443, with requests to localhost:80 automatically redirected
 
 ## File Structure
 
@@ -199,7 +250,7 @@ I guess it still is? It makes sense to me, at least
     * `alembic.ini`: Alembic (migrations) configuration, mostly for logging, [documentation here](https://alembic.sqlalchemy.org/en/latest/tutorial.html#editing-the-ini-file)
     * `requirements.txt`: the python requirements
         * it is recommended to install these within a virtualenv: `python -m venv venv; source venv/bin/activate; pip install -r requirements`
-
+    * `Dockerfile.dev`, `Dockerfile.prod`: Simple dockerfiles to get up and running, see [Run in Docker](#Run-in-Docker) for more info
     * `db`
         * `migrations`: Alembic folder, not strictly necessary to touch unless to modify auto-generated migrations (or write your own)
             * `versions`: the actual migrations
@@ -210,7 +261,8 @@ I guess it still is? It makes sense to me, at least
             * `user.py`: Sample model file
                 * Note there is both a `User` class inheriting from the SQLAlchemy [declarative_base](https://docs.sqlalchemy.org/en/13/orm/extensions/declarative/api.html), as well as `UserBaseType`, `UserCreateType`, and `UserType` classes extending the Pydantic `BaseModel`. The former defines the relations with SQL, the latter serve as data-classes for reading/selecting/writing from the database
     * `services`:  Yes, it is stretching the definition a bit, but basically I am using the term "service" to refer to an organization of endpoints, each of which would have the same prefix in the URL
-        * Each service should serve to define a `fastapi.APIRouter`, which then needs to be added in `main.py`
+        * Each service should serve to define a `utils.api.StyloRouter`, which then needs to be added in `main.py`
+            * This will make sure the endpoints get appropriate paths and the service is appropriately documented
         * Each endpoint should be defined as a decorated function in a service
         * Each endpoint should either return a `utils.api.Okay` or raise a `utils.api.Failed` to standardize return types
         * `auth.py`: Sample service that implements a simple login interface, with the following endpoints: `/api/auth/login`, `/api/auth/validate_token` and `/api/auth/info`
@@ -222,6 +274,7 @@ I guess it still is? It makes sense to me, at least
     * `.flowconfig`: Configuration for flow, [documentation here](https://flow.org/en/docs/config/)
     * `package.json`: Node configuration, consisting mainly of dependencies, scripts, and compilation targets
     * `yarn.lock`: detailed list of dependencies
+    * `Dockerfile.dev`: Simple dockerfile to get up and running, see [Run in Docker](#Run-in-Docker) for more info
     * `build`: Compiled static files go here. In production mode, this directory is statically mounted and served at the base directory
     * `node_modules`: All of the files that
     * `public`: Static resources, which get moved to the build dir when compiled
@@ -240,11 +293,3 @@ I guess it still is? It makes sense to me, at least
                 * `Home.js`: Code that will always be running
                 * `Home.css`: stylizes `Home.js`
                 * `Home.test.js`: Test code for `Home.js`
-* `docker`: Files for managing docker containers
-    * `Dockerfile.dev`: Development dockerfile, assumes the run command mounts the backend and frontend directories to take advantage of hot reloading
-        * pip venv mounting doesn't work for some reason, something about execution order? So the pip dependencies stil need to be installed during the image creation process
-    * `Dockerfile.dev.dockerignore`: Files ignored in development dockerfile 
-    * `docker-dev-start.sh`: Startup script used by development docker image
-    * `Dockerfile.prod`: Production dockerfile, assumes no mounts, installs all packages with yarn and pip and generates a secret to be used 
-    * `Dockerfile.prod.dockerignore`: Files ignored in production dockerfile
-    * `docker-prod-start.sh`: Startup script used by the production docker image. Unnecessary for now, but maybe something else is desired?

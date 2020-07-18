@@ -9,6 +9,8 @@ from utils.config import SECRET_KEY
 
 TWO_WEEKS = datetime.timedelta(days=14)
 
+# SQLAlchemy ORM Model
+
 class User(Base):
     __tablename__ = "users"
 
@@ -16,23 +18,16 @@ class User(Base):
     email = Column(String(255), unique=True)
     password = Column(String(255), nullable=False)
 
-    is_superuser = Column(Boolean(), default=False)
+    isSuperuser = Column('is_superuser', Boolean(), default=False, nullable=False )
 
-    def __init__(self, email: str, password: str, is_superuser: bool = False, id: int = 0):
+    def __init__(self,  id: int = 0, email: str = '', password: str = '', isSuperuser: bool = False):
         self.email = email
         self.password = User.hashed_password(password)
-        self.is_superuser = is_superuser
+        self.isSuperuser = isSuperuser
         self.id = id
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            "is_superuser": self.is_superuser,
-        }
-
     def generate_token(self, expiration: datetime.timedelta=TWO_WEEKS):
-        user_dict = self.to_dict()
+        user_dict = UserType.from_orm(self).dict()
         user_dict["exp"] = datetime.datetime.utcnow() + TWO_WEEKS
         return jwt.encode(user_dict, SECRET_KEY, algorithm='HS256')
 
@@ -41,38 +36,47 @@ class User(Base):
         return bcrypt.hashpw(password, bcrypt.gensalt())
 
     @staticmethod
-    def password_matches(password: str, user: str):
+    def password_matches(password: str, user):
         return bcrypt.checkpw(password, user.password)
-
-    @staticmethod
-    def find_user(db, email: str, password: str):
-        user = db.query(User).filter(User.email == email).first()
-        if user and User.password_matches(password, user):
-            return user
-        else:
-            return None
 
     @staticmethod
     def verify_token(token: str):
         try:
-            data = jwt.decode(token, SECRET_KEY, algorithms='HS256')
-            print(data)
-            return User(data['email'], '', data['is_superuser'], id=data['id'])
+            data = UserType.parse_obj(jwt.decode(token, SECRET_KEY, algorithms='HS256'))
+            return data.to_user()
         except:
             return None
 
+    @staticmethod
+    def create_superuser(email: str, password: str):
+        print("INSERT INTO users (email, password, is_superuser) VALUES ('{}','{}', 1);".format(email, User.hashed_password(password)))
+
+
+# Pydantic Data Schemas
 class UserBaseType(BaseModel):
     email: str
 
 class UserCreateType(UserBaseType):
     email: str 
     password: str
-    is_superuser: bool
+
+    def to_user(self):
+        return User(
+            email       = self.email,
+            password    = User.hashed_password(self.password)
+        )
 
 class UserType(UserBaseType):
-    id: str
+    id: int
     email: str
-    is_superuser: bool
+    isSuperuser: bool
+
+    def to_user(self) -> User:
+        return User(
+            id          = self.id,
+            email       = self.email,
+            isSuperuser = self.isSuperuser
+        )
 
     class Config:
         orm_mode = True

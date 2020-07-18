@@ -2,6 +2,9 @@
 import React from 'react';
 
 import Home from './pages/home/Home';
+import Login from './pages/login/Login';
+import Header from './components/Header';
+
 import AuthContext from './utils/AuthContext';
 
 import {
@@ -14,6 +17,7 @@ import {
 type RouteProps = {
   path: string,
   exact: boolean,
+  children: React$Node
 };
 
 const AuthRoute = (routeProps: RouteProps) => (
@@ -31,9 +35,13 @@ const SuperAuthRoute = (routeProps: RouteProps) => (
 
 const Routes = () => (
   <Router>
+    <Header />
     <Switch>
       <Route exact path="/">
         <Home/>
+      </Route>
+      <Route exact path="/login">
+        <Login/>
       </Route>
     </Switch>
   </Router>

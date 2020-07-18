@@ -1,0 +1,41 @@
+version: '3'
+services:
+  nginx_ssl:
+    restart: always
+    build:
+      dockerfile: nginx/Dockerfile.ssl
+      context: . 
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - backend_prod 
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot_ssl:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Checks every 12 hours to see if the certificate needs renewall
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  
+  backend_ssl:
+    build:
+      dockerfile: Dockerfile.prod 
+      context: ./backend 
+    environment:
+      - PORT=8000
+      - SERVER=NGINX
+      - IS_PROD=TRUE
+    expose:
+      - 8000
+volumes:
+  certbot_conf:
+    {}
+  certbot_www:
+    {}

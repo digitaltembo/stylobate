@@ -1,0 +1,9 @@
+form.loginForm {
+    padding: 16px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+form.loginForm > div {
+    margin: 16px;
+}
